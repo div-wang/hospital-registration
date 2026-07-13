@@ -1,0 +1,29 @@
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
+import { pinoHttp } from "pino-http";
+import { env } from "./config/env.js";
+import authRoutes from "./routes/auth.js";
+import departmentRoutes from "./routes/departments.js";
+import doctorRoutes from "./routes/doctors.js";
+import hospitalRoutes from "./routes/hospitals.js";
+import registrationPeopleRoutes from "./routes/registration-people.js";
+import registrationRoutes from "./routes/registrations.js";
+import { errorHandler, notFoundHandler } from "./lib/errors.js";
+
+export const app = express();
+app.disable("x-powered-by");
+app.use(pinoHttp());
+app.use(helmet());
+app.use(cors({ origin: env.CORS_ORIGINS, credentials: false }));
+app.use(express.json({ limit: "1mb" }));
+
+app.get("/health", (_req, res) => res.json({ success: true, data: { status: "ok", timestamp: new Date().toISOString() } }));
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/hospitals", hospitalRoutes);
+app.use("/api/v1/departments", departmentRoutes);
+app.use("/api/v1/doctors", doctorRoutes);
+app.use("/api/v1/registration-people", registrationPeopleRoutes);
+app.use("/api/v1/registrations", registrationRoutes);
+app.use(notFoundHandler);
+app.use(errorHandler);

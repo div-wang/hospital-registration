@@ -1,0 +1,46 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root-dev-password
+      MYSQL_DATABASE: hospital_registration
+      MYSQL_USER: hospital_app
+      MYSQL_PASSWORD: hospital-dev-password
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot-dev-password"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      CORS_ORIGINS: http://localhost:3000
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: hospital_registration
+      MYSQL_USER: hospital_app
+      MYSQL_PASSWORD: hospital-dev-password
+      MYSQL_CONNECTION_LIMIT: 10
+      JWT_SECRET: local-development-jwt-secret-change-before-production
+      JWT_EXPIRES_IN: 7d
+      DATA_ENCRYPTION_KEY: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+      DEV_SMS_CODE: 123456
+    ports:
+      - "4000:4000"
+
+volumes:
+  mysql_data:
