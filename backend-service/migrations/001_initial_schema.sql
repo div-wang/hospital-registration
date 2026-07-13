@@ -1,0 +1,266 @@
+CREATE DATABASE IF NOT EXISTS hospital_registration
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE hospital_registration;
+
+CREATE TABLE users (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  phone VARCHAR(20) NOT NULL,
+  role ENUM('user','merchant_admin','merchant_staff','super_admin') NOT NULL DEFAULT 'user'
+    COMMENT '普通用户、商户管理员、商户员工、超级管理员',
+  nickname VARCHAR(64) NULL,
+  avatar_url VARCHAR(512) NULL,
+  real_name VARCHAR(32) NOT NULL DEFAULT '',
+  gender TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0未知 1男 2女',
+  status TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '0禁用 1启用',
+  last_login_at DATETIME(3) NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_users_phone (phone),
+  KEY idx_users_role_status (role, status),
+  KEY idx_users_created_at (created_at)
+) ENGINE=InnoDB COMMENT='用户表';
+
+CREATE TABLE sms_verification_codes (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  phone VARCHAR(20) NOT NULL,
+  scene ENUM('login','bind_phone') NOT NULL DEFAULT 'login',
+  code_hash CHAR(64) NOT NULL,
+  expires_at DATETIME(3) NOT NULL,
+  used_at DATETIME(3) NULL,
+  request_ip VARCHAR(64) NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_sms_phone_scene_created (phone, scene, created_at),
+  KEY idx_sms_expires_at (expires_at)
+) ENGINE=InnoDB COMMENT='短信验证码记录';
+
+CREATE TABLE user_third_party_accounts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  provider ENUM('wechat','qwen','alipay','other') NOT NULL,
+  provider_user_id VARCHAR(191) NOT NULL,
+  union_id VARCHAR(191) NULL,
+  profile_json JSON NULL,
+  bound_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_third_party_identity (provider, provider_user_id),
+  UNIQUE KEY uk_user_provider (user_id, provider),
+  CONSTRAINT fk_third_party_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='用户第三方账号关联表';
+
+CREATE TABLE hospitals (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  code VARCHAR(50) NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  short_name VARCHAR(64) NULL,
+  level VARCHAR(20) NOT NULL COMMENT '三级甲等、三级乙等、二级甲等',
+  type VARCHAR(32) NULL COMMENT '综合医院、专科医院、中医医院',
+  province VARCHAR(32) NOT NULL,
+  city VARCHAR(32) NOT NULL,
+  district VARCHAR(32) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  phone VARCHAR(32) NULL,
+  logo_url VARCHAR(512) NULL,
+  license_no VARCHAR(64) NULL,
+  description TEXT NULL,
+  latitude DECIMAL(10,7) NULL,
+  longitude DECIMAL(10,7) NULL,
+  status TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '0删除/禁用 1启用',
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_hospitals_code (code),
+  KEY idx_hospitals_region_level (province, city, district, level),
+  KEY idx_hospitals_name (name),
+  CONSTRAINT fk_hospitals_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='医院表';
+
+CREATE TABLE hospital_members (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  hospital_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  member_role ENUM('admin','staff') NOT NULL,
+  status TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_hospital_member (hospital_id, user_id),
+  KEY idx_hospital_members_user (user_id, status),
+  CONSTRAINT fk_hospital_members_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE,
+  CONSTRAINT fk_hospital_members_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='医院管理员与员工关联表';
+
+CREATE TABLE registration_people (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(64) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  id_card_ciphertext VARBINARY(512) NOT NULL,
+  id_card_hash CHAR(64) NOT NULL,
+  id_card_last4 CHAR(4) NOT NULL,
+  relationship ENUM('self','parent','spouse','child','other') NOT NULL DEFAULT 'other',
+  is_default TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) NULL,
+  PRIMARY KEY (id),
+  KEY idx_registration_people_user_created (user_id, created_at),
+  KEY idx_registration_people_user_id_card (user_id, id_card_hash),
+  CONSTRAINT fk_registration_people_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='挂号人信息表，每用户最多10人（业务层事务控制）';
+
+CREATE TABLE departments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  hospital_id BIGINT UNSIGNED NOT NULL,
+  parent_id BIGINT UNSIGNED NULL,
+  code VARCHAR(50) NOT NULL,
+  name VARCHAR(64) NOT NULL,
+  description VARCHAR(255) NOT NULL DEFAULT '',
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  status TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_department_code (hospital_id, code),
+  KEY idx_departments_hospital_name (hospital_id, name),
+  KEY idx_departments_parent (parent_id),
+  CONSTRAINT fk_departments_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_departments_parent FOREIGN KEY (parent_id) REFERENCES departments(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='医院科室表';
+
+CREATE TABLE doctors (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  hospital_id BIGINT UNSIGNED NOT NULL,
+  department_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(64) NOT NULL,
+  avatar_url VARCHAR(512) NULL,
+  title VARCHAR(64) NOT NULL DEFAULT '' COMMENT '主任医师、副主任医师、主治医师、医师',
+  specialty VARCHAR(500) NOT NULL DEFAULT '',
+  description TEXT NULL,
+  registration_fee DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  status TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_doctors_hospital_department (hospital_id, department_id, status),
+  KEY idx_doctors_name_title (name, title),
+  CONSTRAINT fk_doctors_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_doctors_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='医生表';
+
+CREATE TABLE doctor_schedules (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  hospital_id BIGINT UNSIGNED NOT NULL,
+  department_id BIGINT UNSIGNED NOT NULL,
+  doctor_id BIGINT UNSIGNED NOT NULL,
+  schedule_date DATE NOT NULL,
+  period ENUM('morning','afternoon','evening','custom') NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  total_slots INT UNSIGNED NOT NULL DEFAULT 0,
+  booked_slots INT UNSIGNED NOT NULL DEFAULT 0,
+  fee DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  status TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '0取消 1有效',
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_doctor_schedule (doctor_id, schedule_date, period, start_time),
+  KEY idx_schedules_valid (schedule_date, status, doctor_id),
+  CONSTRAINT chk_schedule_slots CHECK (booked_slots <= total_slots),
+  CONSTRAINT chk_schedule_time CHECK (start_time < end_time),
+  CONSTRAINT fk_schedules_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_schedules_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_schedules_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='医生排班和号源表';
+
+CREATE TABLE registration_orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_no VARCHAR(40) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  registration_person_id BIGINT UNSIGNED NOT NULL,
+  hospital_id BIGINT UNSIGNED NOT NULL,
+  department_id BIGINT UNSIGNED NOT NULL,
+  doctor_id BIGINT UNSIGNED NOT NULL,
+  schedule_id BIGINT UNSIGNED NULL,
+  person_name VARCHAR(64) NOT NULL,
+  person_phone VARCHAR(20) NOT NULL,
+  person_id_card_ciphertext VARBINARY(512) NOT NULL,
+  hospital_name VARCHAR(128) NOT NULL,
+  department_name VARCHAR(64) NOT NULL,
+  doctor_name VARCHAR(64) NOT NULL,
+  doctor_title VARCHAR(64) NOT NULL,
+  visit_date DATE NULL,
+  period VARCHAR(32) NULL,
+  visit_number INT UNSIGNED NULL,
+  amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  status ENUM('pending_payment','paid','confirmed','completed','cancelled','refunded','expired') NOT NULL DEFAULT 'pending_payment',
+  symptoms VARCHAR(1000) NOT NULL DEFAULT '',
+  cancel_reason VARCHAR(255) NULL,
+  paid_at DATETIME(3) NULL,
+  completed_at DATETIME(3) NULL,
+  cancelled_at DATETIME(3) NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_registration_orders_no (order_no),
+  KEY idx_registration_orders_user_created (user_id, created_at),
+  KEY idx_registration_orders_hospital_status (hospital_id, status, created_at),
+  KEY idx_registration_orders_schedule (schedule_id),
+  CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_orders_person FOREIGN KEY (registration_person_id) REFERENCES registration_people(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_orders_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_orders_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_orders_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_orders_schedule FOREIGN KEY (schedule_id) REFERENCES doctor_schedules(id) ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='挂号订单表，保留关键业务快照';
+
+CREATE TABLE accounts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  hospital_id BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'CNY',
+  balance DECIMAL(16,2) NOT NULL DEFAULT 0.00,
+  frozen_amount DECIMAL(16,2) NOT NULL DEFAULT 0.00,
+  status TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  version INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_accounts_hospital (hospital_id),
+  CONSTRAINT chk_account_amount CHECK (balance >= 0 AND frozen_amount >= 0),
+  CONSTRAINT fk_accounts_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='医院商户资金账户';
+
+CREATE TABLE payment_flows (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  flow_no VARCHAR(40) NOT NULL,
+  account_id BIGINT UNSIGNED NOT NULL,
+  order_id BIGINT UNSIGNED NULL,
+  operator_user_id BIGINT UNSIGNED NULL,
+  business_type ENUM('recharge','freeze','unfreeze','consume','refund','withdraw','adjustment') NOT NULL,
+  direction ENUM('income','expense','freeze','unfreeze') NOT NULL,
+  channel ENUM('wechat','alipay','qwen','bank','balance','manual','other') NOT NULL DEFAULT 'manual',
+  third_party_trade_no VARCHAR(128) NULL,
+  amount DECIMAL(16,2) NOT NULL,
+  balance_before DECIMAL(16,2) NOT NULL,
+  balance_after DECIMAL(16,2) NOT NULL,
+  frozen_before DECIMAL(16,2) NOT NULL,
+  frozen_after DECIMAL(16,2) NOT NULL,
+  status ENUM('pending','success','failed','closed') NOT NULL DEFAULT 'success',
+  remark VARCHAR(255) NULL,
+  extra_json JSON NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_payment_flows_no (flow_no),
+  UNIQUE KEY uk_payment_channel_trade (channel, third_party_trade_no),
+  KEY idx_payment_flows_account_created (account_id, created_at),
+  KEY idx_payment_flows_order (order_id),
+  CONSTRAINT chk_payment_flow_amount CHECK (amount > 0),
+  CONSTRAINT fk_payment_flows_account FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_payment_flows_order FOREIGN KEY (order_id) REFERENCES registration_orders(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_payment_flows_operator FOREIGN KEY (operator_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='充值、冻结、消费、退款等资金流水';

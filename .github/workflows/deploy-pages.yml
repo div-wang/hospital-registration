@@ -23,11 +23,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: patient-h5/package-lock.json
       - run: npm ci
+        working-directory: patient-h5
       - run: npm run build:pages
+        working-directory: patient-h5
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ./patient-h5/out
       - uses: actions/deploy-pages@v4
         id: deployment
