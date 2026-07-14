@@ -40,3 +40,26 @@
 .region{width:100%;border:0;background:#fff;padding:13px 18px;display:flex;align-items:center;gap:7px;text-align:left;color:#4c5564;font-weight:700}
 .region svg:last-child{margin-left:auto}
 @media(min-width:700px){.booking-bottom{bottom:22px;border-radius:0 0 26px 26px}}
+
+/* Keep every line icon optically aligned with its label. */
+svg{display:block;flex:0 0 auto}
+button,a,label,.status-band,.schedule-section header span{align-items:center}
+.hospital-search{display:flex;gap:9px;padding-left:10px}
+.hospital-search>i{width:1px;height:24px;background:#dce2ea;flex:0 0 auto}
+.hospital-search>.search-region{display:flex;align-items:center;gap:3px;max-width:116px;padding:0 4px;background:transparent;color:#344054;font-weight:700;white-space:nowrap}
+.hospital-search>.search-region span{overflow:hidden;text-overflow:ellipsis}
+.hospital-search>.search-region svg{width:16px;height:16px;color:var(--blue)}
+.hospital-search>svg{width:19px;height:19px;flex:0 0 19px}
+.patient-info .add-person{display:inline-flex;align-items:center;gap:5px;border:0;background:#edf5ff;color:#2875e8;padding:8px 11px;border-radius:999px;font-size:13px;font-weight:700;line-height:1}
+.patient-info .add-person svg{width:16px;height:16px}
+.person-picker button{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) 22px;gap:12px;align-items:center;border:1px solid #dcecff;background:linear-gradient(135deg,#f5faff,#eef7ff);padding:15px;border-radius:16px;color:#4f6076;box-shadow:0 6px 18px rgba(47,120,220,.08)}
+.person-picker button.active{border-color:#4b8df8;background:linear-gradient(135deg,#eef6ff,#e7f2ff);box-shadow:0 8px 22px rgba(47,120,220,.15)}
+.person-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#4f91fa,#2fc4d4);color:#fff}
+.person-icon svg{width:24px;height:24px}
+.person-copy{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.person-copy b{display:flex;align-items:center;gap:7px;color:#1f2b3d;font-size:16px}
+.person-copy i{font-style:normal;font-size:10px;color:#2875e8;background:#fff;padding:2px 6px;border-radius:999px}
+.person-copy small{color:#66768c;font-size:12px}
+.person-check{width:21px;height:21px;color:#b7c8dc}
+.person-picker button.active .person-check{color:#347cf6;fill:#e8f2ff}
+.booking-bottom>button{display:flex;align-items:center;justify-content:center;gap:7px}
