@@ -1,0 +1,6 @@
+<script setup lang="ts">
+import{ref}from"vue";import{Camera}from"lucide-vue-next";import PageHeader from"../components/PageHeader.vue";import{submitFeedback}from"../actions";
+const content=ref(""),phone=ref(""),sent=ref(false),message=ref("");
+async function submit(){if(content.value.trim().length<10){message.value="请至少输入10个字";return}if(phone.value&&!/^1[3-9]\d{9}$/.test(phone.value)){message.value="联系电话格式不正确";return}try{await submitFeedback(content.value,phone.value);sent.value=true;message.value=""}catch(e){message.value=e instanceof Error?e.message:"提交失败"}}
+</script>
+<template><main><PageHeader title="投诉建议"/><section class="feedback-card"><label>问题和意见<textarea v-model="content" maxlength="1000" placeholder="请描述您的问题，以便我们提供更好的帮助"/></label><label>图片（选填，提供问题截图）<button class="upload"><Camera/></button></label><label>联系电话<input :value="phone" @input="phone=($event.target as HTMLInputElement).value.replace(/\D/g,'').slice(0,11)" placeholder="选填，便于我们与您联系"/></label></section><p v-if="message" class="form-message center">{{message}}</p><p v-if="sent" class="success-message">提交成功，我们会尽快处理</p><button class="feedback-submit" :disabled="content.trim().length<10||sent" @click="submit">{{sent?'已提交':'提交'}}</button></main></template>

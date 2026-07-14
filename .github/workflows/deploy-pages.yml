@@ -26,11 +26,13 @@ jobs:
           cache-dependency-path: patient-h5/package-lock.json
       - run: npm ci
         working-directory: patient-h5
-      - run: npm run build:pages
+      - run: npm run build
         working-directory: patient-h5
+        env:
+          VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./patient-h5/out
+          path: ./patient-h5/dist
       - uses: actions/deploy-pages@v4
         id: deployment

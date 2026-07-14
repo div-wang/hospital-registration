@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | 后台服务 | `backend-service/` | Node.js、TypeScript、Express、MySQL 8 | 为 H5、小程序、App 和医院后台提供 REST API |
 | 医院后台 | `hospital-admin/` | React、TypeScript、Vite | 医院、科室、医生、排班和账户管理 |
-| 患者挂号 H5 | `patient-h5/` | Next.js、React | 原有患者端挂号页面（页面代码未修改） |
+| 患者挂号 H5 | `patient-h5/` | Vue 3、TypeScript、Vite | 患者端挂号、医院医生查询与个人中心 |
 
 ## 本地运行
 

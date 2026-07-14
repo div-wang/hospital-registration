@@ -11,6 +11,7 @@
     "test": "node --import tsx --test tests/**/*.test.ts"
     ,"db:migrate": "tsx scripts/run-sql.ts migrations/001_initial_schema.sql"
     ,"db:seed": "tsx scripts/run-sql.ts migrations/002_seed_demo_data.sql"
+    ,"db:migrate:feedback": "tsx scripts/run-sql.ts migrations/003_feedback.sql"
   },
   "dependencies": {
     "cors": "^2.8.5",

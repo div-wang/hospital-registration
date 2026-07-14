@@ -81,4 +81,21 @@ router.get("/:id", asyncHandler(async (req, res) => {
   res.json({ success: true, data: rows[0] });
 }));
 
+router.post("/:id/cancel", asyncHandler(async (req, res) => {
+  const id = z.coerce.number().int().positive().parse(req.params.id);
+  const input = z.object({ reason: z.string().trim().max(255).default("用户取消") }).parse(req.body ?? {});
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.query<RowDataPacket[]>("SELECT id, schedule_id scheduleId, status FROM registration_orders WHERE id=? AND user_id=? FOR UPDATE", [id, req.auth!.userId]);
+    const order = rows[0];
+    if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "挂号订单不存在");
+    if (!["pending_payment", "paid", "confirmed"].includes(order.status)) throw new AppError(409, "ORDER_CANNOT_CANCEL", "当前订单状态不能取消");
+    await connection.execute("UPDATE registration_orders SET status='cancelled', cancel_reason=?, cancelled_at=NOW(3) WHERE id=?", [input.reason, id]);
+    if (order.scheduleId) await connection.execute("UPDATE doctor_schedules SET booked_slots=GREATEST(booked_slots-1,0) WHERE id=?", [order.scheduleId]);
+    await connection.commit();
+    res.json({ success: true, data: { id, status: "cancelled" } });
+  } catch (error) { await connection.rollback(); throw error; } finally { connection.release(); }
+}));
+
 export default router;
