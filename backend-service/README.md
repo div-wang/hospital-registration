@@ -13,6 +13,8 @@ docker compose up --build
 - MySQL：`127.0.0.1:3306`
 - 开发验证码：由 `.env` 的 `DEV_SMS_CODE` 配置
 
+开发环境自动允许来自 `http://localhost:*` 和 `http://127.0.0.1:*` 的浏览器请求。生产环境只允许 `CORS_ORIGINS` 中明确列出的地址。
+
 手动启动时先复制 `.env.example`，并依次执行 `migrations/001_initial_schema.sql` 和可选的 `002_seed_demo_data.sql`。
 
 也可以执行：

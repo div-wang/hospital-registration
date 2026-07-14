@@ -14,11 +14,30 @@ import accountRoutes from "./routes/accounts.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { accessGuard } from "./middleware/access-guard.js";
 
+const isAllowedOrigin = (origin: string): boolean => {
+  if (env.CORS_ORIGINS.includes(origin)) return true;
+  if (env.NODE_ENV !== "development") return false;
+  try {
+    const url = new URL(origin);
+    return url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 export const app = express();
 app.disable("x-powered-by");
 app.use(pinoHttp());
 app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGINS, credentials: false }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || isAllowedOrigin(origin)) callback(null, true);
+    else callback(null, false);
+  },
+  methods: ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "platform"],
+  maxAge: 86400,
+}));
 app.use(express.json({ limit: "1mb" }));
 app.use(accessGuard);
 
