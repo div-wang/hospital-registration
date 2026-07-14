@@ -1,6 +1,4 @@
-CREATE DATABASE IF NOT EXISTS hospital_registration
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-USE hospital_registration;
+-- 连接时通过 MYSQL_DATABASE 选择数据库；部署账号无需 CREATE DATABASE 权限。
 
 CREATE TABLE users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

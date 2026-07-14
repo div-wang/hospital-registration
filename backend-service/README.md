@@ -15,9 +15,18 @@ docker compose up --build
 
 手动启动时先复制 `.env.example`，并依次执行 `migrations/001_initial_schema.sql` 和可选的 `002_seed_demo_data.sql`。
 
+也可以执行：
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+数据库账号至少需要目标数据库的 `CREATE`、`ALTER`、`INDEX`、`SELECT`、`INSERT`、`UPDATE` 和 `DELETE` 权限。
+
 ## 访问控制
 
-白名单只有健康检查、发送短信和手机号登录。其他接口必须同时携带：
+健康检查、发送短信和手机号登录在白名单中；医院、科室、医生和排班的 GET 接口允许匿名浏览。其他接口需要登录。除健康检查和登录白名单外，请求均需携带 `platform`：
 
 ```text
 Authorization: Bearer <accessToken>

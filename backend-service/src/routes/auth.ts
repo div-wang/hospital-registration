@@ -76,4 +76,13 @@ router.post("/third-party/bind", asyncHandler(async () => {
   throw new AppError(501, "NOT_IMPLEMENTED", "微信、千问、支付宝账号绑定接口已预留，暂未开放");
 }));
 
+router.get("/me", asyncHandler(async (req, res) => {
+  const [memberships] = await pool.query<RowDataPacket[]>(
+    `SELECT hm.hospital_id hospitalId, h.name hospitalName, hm.member_role memberRole
+     FROM hospital_members hm JOIN hospitals h ON h.id=hm.hospital_id
+     WHERE hm.user_id=? AND hm.status=1 AND h.status=1`, [req.auth!.userId],
+  );
+  res.json({ success: true, data: { ...req.auth!, memberships } });
+}));
+
 export default router;
