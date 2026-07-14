@@ -21,7 +21,7 @@ async function submit(){if(!valid.value||!doctor.value||!schedule.value)return;t
 <template>
   <main v-if="doctor&&schedule" class="booking-page">
     <PageHeader title="确认预约"/>
-    <section class="booking-doctor"><div class="avatar">{{doctor.name[0]}}</div><div><h2>{{doctor.name}} <small>{{doctor.title}} · {{doctor.departmentName}}</small></h2><p>{{doctor.hospitalName}}</p></div></section>
+    <section class="booking-doctor"><div class="avatar"><img v-if="doctor.avatarUrl" :src="doctor.avatarUrl" :alt="`${doctor.name}医生头像`"/><span v-else>{{doctor.name[0]}}</span></div><div><h2>{{doctor.name}} <small>{{doctor.title}} · {{doctor.departmentName}}</small></h2><p>{{doctor.hospitalName}}</p></div></section>
     <section class="booking-card"><h3>号源信息</h3><dl><dt>日期</dt><dd>{{dateText}}</dd><dt>医院</dt><dd>{{doctor.hospitalName}}</dd><dt>地点</dt><dd>{{locationText}}</dd><dt>费用</dt><dd class="price">¥{{schedule.fee}}（到院支付）</dd></dl><small>挂号费由医院自行设定，平台不收取额外费用</small></section>
     <section class="booking-card patient-info">
       <header><h3>预约信息</h3><button class="add-person" @click="showAdd"><Plus/><span>添加就诊人</span></button></header>

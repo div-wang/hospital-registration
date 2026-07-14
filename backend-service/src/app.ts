@@ -40,6 +40,7 @@ app.use(cors({
   maxAge: 86400,
 }));
 app.use(express.json({ limit: "1mb" }));
+app.use("/avatars", express.static(new URL("../public/avatars", import.meta.url).pathname, { maxAge: "30d", immutable: true }));
 app.use(accessGuard);
 
 app.get("/health", (_req, res) => res.json({ success: true, data: { status: "ok", timestamp: new Date().toISOString() } }));
