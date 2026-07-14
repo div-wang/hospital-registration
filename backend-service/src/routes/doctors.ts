@@ -14,13 +14,17 @@ const bodySchema = z.object({ hospitalId:z.number().int().positive(), department
 router.get("/", asyncHandler(async (req, res) => {
   const input = paginationSchema.extend({
     keyword: z.string().trim().max(100).optional(), hospitalId: z.coerce.number().int().positive().optional(),
-    departmentId: z.coerce.number().int().positive().optional(), title: z.string().max(32).optional(),
+    departmentId: z.coerce.number().int().positive().optional(), department: z.string().trim().max(64).optional(),
+    province: z.string().trim().max(32).optional(), city: z.string().trim().max(32).optional(), title: z.string().max(32).optional(),
   }).parse(req.query);
   const where = ["d.status=1", "h.status=1", "dep.status=1"];
   const params: unknown[] = [];
   if (input.keyword) { where.push("(d.name LIKE ? OR d.specialty LIKE ? OR h.name LIKE ?)"); params.push(`%${input.keyword}%`, `%${input.keyword}%`, `%${input.keyword}%`); }
   if (input.hospitalId) { where.push("d.hospital_id=?"); params.push(input.hospitalId); }
   if (input.departmentId) { where.push("d.department_id=?"); params.push(input.departmentId); }
+  if (input.department) { where.push("dep.name=?"); params.push(input.department); }
+  if (input.province) { where.push("h.province=?"); params.push(input.province); }
+  if (input.city) { where.push("h.city=?"); params.push(input.city); }
   if (input.title) { where.push("d.title=?"); params.push(input.title); }
   const clause = where.join(" AND ");
   const joins = "FROM doctors d JOIN hospitals h ON h.id=d.hospital_id JOIN departments dep ON dep.id=d.department_id";

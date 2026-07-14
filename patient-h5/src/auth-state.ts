@@ -1,0 +1,1 @@
+import{ref}from"vue";export const loginVisible=ref(false);export const loginRedirect=ref("");export function openLogin(redirect=""){loginRedirect.value=redirect;loginVisible.value=true}export function closeLogin(){loginVisible.value=false}

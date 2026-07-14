@@ -1,1 +1,1 @@
-<script setup lang="ts">import{ChevronLeft,MoreHorizontal,CircleDot}from"lucide-vue-next";defineProps<{title:string}>();</script><template><header class="page-header"><button @click="$router.back()"><ChevronLeft/></button><h1>{{title}}</h1><span class="mini-program"><MoreHorizontal/><i/><CircleDot/></span></header></template>
+<script setup lang="ts">import{ChevronLeft}from"lucide-vue-next";defineProps<{title:string}>();</script><template><header class="page-header"><button @click="$router.back()"><ChevronLeft/></button><h1>{{title}}</h1><span/></header></template>
