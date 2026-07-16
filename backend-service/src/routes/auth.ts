@@ -7,6 +7,7 @@ import { pool } from "../db/pool.js";
 import { asyncHandler } from "../lib/async-handler.js";
 import { AppError } from "../lib/errors.js";
 import { signAccessToken, type UserRole } from "../services/auth.js";
+import { verifyPassword } from "../lib/password.js";
 
 const router = Router();
 const phoneSchema = z.string().regex(/^1[3-9]\d{9}$/, "手机号格式不正确");
@@ -70,6 +71,18 @@ router.post("/mobile-login", asyncHandler(async (req, res) => {
     const tokenPayload = { userId: user.id, phone: user.phone, role: user.role };
     res.json({ success: true, data: { accessToken: signAccessToken(tokenPayload), tokenType: "Bearer", user: tokenPayload, isNewUser } });
   } catch (error) { await connection.rollback(); throw error; } finally { connection.release(); }
+}));
+
+router.post("/password-login",asyncHandler(async(req,res)=>{
+  const input=z.object({phone:phoneSchema,password:z.string().min(8).max(72)}).parse(req.body);
+  const[rows]=await pool.query<(RowDataPacket&{id:number;phone:string;role:UserRole;status:number;passwordHash:string|null;passwordSalt:string|null})[]>("SELECT id,phone,role,status,password_hash passwordHash,password_salt passwordSalt FROM users WHERE phone=? LIMIT 1",[input.phone]);
+  const user=rows[0];
+  if(!user||!user.passwordHash||!user.passwordSalt||!await verifyPassword(input.password,user.passwordSalt,user.passwordHash))throw new AppError(401,"INVALID_CREDENTIALS","手机号或密码错误");
+  if(user.status!==1)throw new AppError(403,"USER_DISABLED","该账号已被禁用");
+  if(!["merchant_admin","merchant_staff","super_admin"].includes(user.role))throw new AppError(403,"MERCHANT_ONLY","该账号没有医院后台权限");
+  await pool.execute("UPDATE users SET last_login_at=NOW(3) WHERE id=?",[user.id]);
+  const tokenPayload={userId:user.id,phone:user.phone,role:user.role};
+  res.json({success:true,data:{accessToken:signAccessToken(tokenPayload),tokenType:"Bearer",user:tokenPayload}});
 }));
 
 router.post("/third-party/bind", asyncHandler(async () => {

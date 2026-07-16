@@ -6,6 +6,7 @@ const whitelist = new Set([
   "GET /health",
   "POST /api/v1/auth/send-sms",
   "POST /api/v1/auth/mobile-login",
+  "POST /api/v1/auth/password-login",
 ]);
 const publicReadPrefixes = [
   "/api/v1/hospitals",

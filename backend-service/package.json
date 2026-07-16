@@ -13,6 +13,8 @@
     ,"db:seed": "tsx scripts/run-sql.ts migrations/002_seed_demo_data.sql"
     ,"db:migrate:feedback": "tsx scripts/run-sql.ts migrations/003_feedback.sql"
     ,"db:migrate:doctor-profiles": "tsx scripts/run-sql.ts migrations/004_doctor_profiles.sql"
+    ,"db:migrate:merchant-login": "tsx scripts/run-sql.ts migrations/005_merchant_password_login.sql"
+    ,"db:seed:hospital-admins": "tsx scripts/seed-hospital-admins.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

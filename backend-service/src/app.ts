@@ -12,6 +12,7 @@ import registrationRoutes from "./routes/registrations.js";
 import scheduleRoutes from "./routes/schedules.js";
 import accountRoutes from "./routes/accounts.js";
 import feedbackRoutes from "./routes/feedback.js";
+import merchantRegistrationRoutes from "./routes/merchant-registrations.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { accessGuard } from "./middleware/access-guard.js";
 
@@ -53,5 +54,6 @@ app.use("/api/v1/registrations", registrationRoutes);
 app.use("/api/v1/schedules", scheduleRoutes);
 app.use("/api/v1/accounts", accountRoutes);
 app.use("/api/v1/feedback", feedbackRoutes);
+app.use("/api/v1/merchant/registrations",merchantRegistrationRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
